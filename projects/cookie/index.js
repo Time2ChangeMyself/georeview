@@ -45,8 +45,70 @@ const addButton = homeworkContainer.querySelector('#add-button');
 // таблица со списком cookie
 const listTable = homeworkContainer.querySelector('#list-table tbody');
 
-filterNameInput.addEventListener('input', function () {});
+const cookiesMap = getCookies();
 
-addButton.addEventListener('click', () => {});
+let filterValue = '';
 
-listTable.addEventListener('click', (e) => {});
+function updateTable() {
+  getCookies();
+  const fragment = document.createDocumentFragment();
+  let total = 0;
+
+  listTable.innerHTML = '';
+
+  for (const [name, value] of cookiesMap) {
+    if (
+      filterValue &&
+      !name.toLowerCase().includes(filterValue.toLowerCase()) &&
+      !value.toLowerCase().includes(filterValue.toLowerCase())
+    ) {
+      continue;
+    }
+
+    total++;
+
+    const tr = document.createElement('tr');
+    tr.innerHTML = `<td class = "name">${name}</td><td class = "value">${value}</td><td><button class = "remove-btn" data-name="${name}">Удалить</button></td>`;
+    fragment.append(tr);
+  }
+
+  if (total) {
+    listTable.parentNode.classList.remove('hidden');
+    listTable.append(fragment);
+  } else {
+    listTable.parentNode.classList.add('hidden');
+  }
+}
+updateTable();
+
+function getCookies() {
+  return document.cookie
+    .split('; ')
+    .filter(Boolean)
+    .map((cookie) => cookie.match(/^([^=]+)=(.+)/))
+    .reduce((obj, [, name, value]) => {
+      obj.set(name, value);
+
+      return obj;
+    }, new Map());
+}
+
+filterNameInput.addEventListener('input', function () {
+  filterValue = this.value;
+  updateTable();
+});
+
+addButton.addEventListener('click', () => {
+  document.cookie = `${addNameInput.value}=${addValueInput.value}`;
+  cookiesMap.set(addNameInput.value, addValueInput.value);
+  updateTable();
+});
+
+listTable.addEventListener('click', (e) => {
+  if (e.target.classList.contains('remove-btn')) {
+    const cookieName = e.target.dataset.name;
+    cookiesMap.delete(cookieName);
+    document.cookie = `${cookieName}=deleted; max-age=0`;
+    updateTable();
+  }
+});
